@@ -6,7 +6,7 @@ AF_DCMotor motor_R(4);  // 오른쪽 바퀴 4번
 
 #define BT_RXD A4
 #define BT_TXD A5
-SoftwareSerial bluetooth(BT_RXD, BT_TXD);
+SoftwareSerial bluetooth(BT_TXD, BT_RXD);
 
 char rec_data;
 
@@ -36,7 +36,7 @@ void setup() {
   pinMode(TrigPin, OUTPUT);
 
 
-  motor_L.setSpeed(175);    // 왼쪽 바퀴 속도
+  motor_L.setSpeed(200);    // 왼쪽 바퀴 속도
   motor_L.run(RELEASE);     // 왼쪽 바퀴 대기 상태
   motor_R.setSpeed(200);    // 오른쪽 바퀴 속도
   motor_R.run(RELEASE);     // 오른쪽 바퀴 대기 상태
@@ -71,8 +71,10 @@ void loop() {
         break;
     }
   }
-    delay(100);
-    Obstacle_Check();
+   // Forward();
+    //delay(100);
+    //Stop();
+    //Obstacle_Check();
 }
 
 // 장애물 확인 및 회피 방향 결정
@@ -80,15 +82,15 @@ void Obstacle_Check() {
   int val = random(2);
   Distance_Measurement();
 
-  Serial.println(distance);
+ // Serial.println(distance);
 
   while(distance < 200) {
     if(distance < 180) {
-      Backward();
+      //Backward();
       delay(250);
       Stop();
       delay(50);
-      Distance_Measurement();
+      //Distance_Measurement();
     }
     else {
       if(val == 0) {
@@ -118,57 +120,21 @@ void Distance_Measurement() {
 
 // 방향 제어 함수
 void Forward() {
-  motor_L.run(FORWARD); motor_R.run(BACKWARD);
-  for(i=0; i<200; i=i+20) {
-    motor_L.setSpeed(i); motor_R.setSpeed(i);
-    delay(2);
-  }
-  for(i=200; i<0; i=i-20) {
-    motor_L.setSpeed(i); motor_R.setSpeed(i);
-    delay(2);
-  }
+  motor_L.run(BACKWARD); motor_R.run(FORWARD);
 }
 
 void Backward() {
-  motor_L.run(BACKWARD); motor_R.run(BACKWARD);
-  for(i=0; i<200; i=i+20) {
-    motor_L.setSpeed(i); motor_R.setSpeed(i);
-    delay(2);
-  }
-  for(i=200; i<0; i=i-20) {
-    motor_L.setSpeed(i); motor_R.setSpeed(i);
-    delay(2);
-  }
+  motor_L.run(FORWARD); motor_R.run(BACKWARD);
 }
 
 void Right() {
-  motor_L.run(FORWARD); motor_R.run(BACKWARD);
-  for(i=0; i<180; i=i+20) {
-    motor_L.setSpeed(i); motor_R.setSpeed(i);
-    delay(2);
-  }
-  for(i=180; i<0; i=i-20) {
-    motor_L.setSpeed(i); motor_R.setSpeed(i);
-    delay(2);
-  }
+  motor_L.run(BACKWARD); motor_R.run(BACKWARD);
 }
 
 void Left() {
-  motor_L.run(BACKWARD); motor_R.run(FORWARD);
-  for(i=0; i<180; i=i+20) {
-    motor_L.setSpeed(i); motor_R.setSpeed(i);
-    delay(2);
-  }
-  for(i=180; i<0; i=i-20) {
-    motor_L.setSpeed(i); motor_R.setSpeed(i);
-    delay(2);
-  }
+  motor_L.run(FORWARD); motor_R.run(FORWARD);
 }
 
 void Stop() {
   motor_L.run(RELEASE); motor_R.run(RELEASE);
-  for(i=200; i>=0; i=i-20) {
-    motor_L.setSpeed(i); motor_R.setSpeed(i);
-    delay(2);
-  }
 }
