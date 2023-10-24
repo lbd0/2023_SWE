@@ -4,6 +4,15 @@
 AF_DCMotor motor_L(1);  // 왼쪽 바퀴 1번
 AF_DCMotor motor_R(4);  // 오른쪽 바퀴 4번
 
+#define BT_RXD A4
+#define BT_TXD A5
+SoftwareSerial bluetooth(BT_RXD, BT_TXD);
+
+char rec_data;
+
+int i;
+int j;
+
 // 초음파센서 출력핀(trig) & 입력핀(echo)
 int TrigPin = A0;
 int EchoPin = A1;
@@ -20,6 +29,13 @@ void Stop();
 
 void setup() {
   // put your setup code here, to run once:
+  Serial.begin(9600);     // 시리얼모니터 통신
+  bluetooth.begin(9600);  // 블루투스 통신
+  
+  pinMode(EchoPin, INPUT);
+  pinMode(TrigPin, OUTPUT);
+
+
   motor_L.setSpeed(175);    // 왼쪽 바퀴 속도
   motor_L.run(RELEASE);     // 왼쪽 바퀴 대기 상태
   motor_R.setSpeed(200);    // 오른쪽 바퀴 속도
@@ -29,23 +45,130 @@ void setup() {
 void loop() {
   // put your main code here, to run repeatedly:
 
-// 전진
-  motor_L.run(FORWARD);     
-  motor_R.run(BACKWARD);     
-  delay(2000);              
+// 블루투스로 방향 제어
+  if(bluetooth.available()) {
+    rec_data = bluetooth.read();
+    Serial.write(rec_data);
+    switch(rec_data) {
+      case 'w' :
+        Forward();
+        Serial.write("직진");
+        break;
+      case 's' :
+        Backward();
+        Serial.write("후진");
+        break;
+      case 'd' :
+        Right();
+        Serial.write("우회전");
+        break;
+      case 'a' :
+        Left();
+        Serial.write("좌회전");
+        break;
+      case 'f' :
+        Stop();
+        break;
+    }
+  }
+    delay(100);
+    Obstacle_Check();
+}
 
-// 멈춤
-  motor_L.run(RELEASE);     
-  motor_R.run(RELEASE);     
-  delay(1000);              
+// 장애물 확인 및 회피 방향 결정
+void Obstacle_Check() {
+  int val = random(2);
+  Distance_Measurement();
 
-// 후진
-  motor_L.run(BACKWARD);
-  motor_R.run(FORWARD);
-  delay(2000);
+  Serial.println(distance);
 
-// 멈춤
-  motor_L.run(RELEASE);
-  motor_R.run(RELEASE);
-  delay(1000);
+  while(distance < 200) {
+    if(distance < 180) {
+      Backward();
+      delay(250);
+      Stop();
+      delay(50);
+      Distance_Measurement();
+    }
+    else {
+      if(val == 0) {
+        Right();
+        delay(400);
+      }
+      else if(val == 1) {
+        Left();
+        delay(400);
+      }
+      Distance_Measurement();
+    }
+  }
+}
+
+// 거리 감지 함수
+void Distance_Measurement() {
+  digitalWrite(TrigPin, LOW);
+  delay(2);
+  digitalWrite(TrigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(TrigPin, LOW);
+  duration = pulseIn(EchoPin, HIGH);    // echoPin이  HIGH를 유지한 시간
+  distance = ((float)(340 * duration) / 1000) / 2;
+  delay(5);
+}
+
+// 방향 제어 함수
+void Forward() {
+  motor_L.run(FORWARD); motor_R.run(BACKWARD);
+  for(i=0; i<200; i=i+20) {
+    motor_L.setSpeed(i); motor_R.setSpeed(i);
+    delay(2);
+  }
+  for(i=200; i<0; i=i-20) {
+    motor_L.setSpeed(i); motor_R.setSpeed(i);
+    delay(2);
+  }
+}
+
+void Backward() {
+  motor_L.run(BACKWARD); motor_R.run(BACKWARD);
+  for(i=0; i<200; i=i+20) {
+    motor_L.setSpeed(i); motor_R.setSpeed(i);
+    delay(2);
+  }
+  for(i=200; i<0; i=i-20) {
+    motor_L.setSpeed(i); motor_R.setSpeed(i);
+    delay(2);
+  }
+}
+
+void Right() {
+  motor_L.run(FORWARD); motor_R.run(BACKWARD);
+  for(i=0; i<180; i=i+20) {
+    motor_L.setSpeed(i); motor_R.setSpeed(i);
+    delay(2);
+  }
+  for(i=180; i<0; i=i-20) {
+    motor_L.setSpeed(i); motor_R.setSpeed(i);
+    delay(2);
+  }
+}
+
+void Left() {
+  motor_L.run(BACKWARD); motor_R.run(FORWARD);
+  for(i=0; i<180; i=i+20) {
+    motor_L.setSpeed(i); motor_R.setSpeed(i);
+    delay(2);
+  }
+  for(i=180; i<0; i=i-20) {
+    motor_L.setSpeed(i); motor_R.setSpeed(i);
+    delay(2);
+  }
+}
+
+void Stop() {
+  motor_L.run(RELEASE); motor_R.run(RELEASE);
+  for(i=200; i>=0; i=i-20) {
+    motor_L.setSpeed(i); motor_R.setSpeed(i);
+    delay(2);
+  }
 }
